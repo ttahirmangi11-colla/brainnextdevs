@@ -1,0 +1,776 @@
+import fs from 'fs';
+import path from 'path';
+import mongoose from 'mongoose';
+import {
+  ServiceItem,
+  ProjectItem,
+  ProductItem,
+  TeamMemberItem,
+  PricingPlanItem,
+  BlogPostItem,
+  InquiryItem,
+  DemoRequestItem,
+  SiteSettings
+} from '../types/index.js';
+import {
+  ServiceModel,
+  ProjectModel,
+  ProductModel,
+  TeamMemberModel,
+  PricingPlanModel,
+  BlogPostModel,
+  InquiryModel,
+  DemoRequestModel,
+  SiteSettingModel
+} from './models.js';
+
+const DATA_DIR = path.resolve(process.cwd(), 'data');
+const STORE_FILE = path.join(DATA_DIR, 'store.json');
+
+// Initial seed data adhering strictly to user prompt specifications
+const initialData: {
+  services: ServiceItem[];
+  projects: ProjectItem[];
+  products: ProductItem[];
+  team: TeamMemberItem[];
+  pricing: PricingPlanItem[];
+  blogs: BlogPostItem[];
+  inquiries: InquiryItem[];
+  demoRequests: DemoRequestItem[];
+  settings: SiteSettings;
+} = {
+  services: [
+    {
+      id: 'srv-1',
+      title: 'Website Development',
+      category: 'Web Solutions',
+      shortDesc: 'Custom high-performance websites built with modern frameworks and responsive architectures.',
+      fullDesc: 'We engineer bespoke, fast-loading, SEO-ready web applications that convert visitors into loyal clients. Leveraging modern front-end frameworks and responsive layouts, our solutions deliver seamless experiences across desktop and mobile devices.',
+      iconName: 'Globe',
+      features: ['Modern Single Page & Multi-page Apps', 'Responsive & Mobile-First Layouts', 'SEO & Core Web Vitals Optimization', 'Headless CMS & API Integrations']
+    },
+    {
+      id: 'srv-2',
+      title: 'Software Development',
+      category: 'Enterprise Engineering',
+      shortDesc: 'Scalable enterprise software, custom dashboards, and business automation platforms.',
+      fullDesc: 'From workflow automation to bespoke internal tools, we design enterprise-grade software engineered for high concurrency, security, and effortless maintainability.',
+      iconName: 'Code',
+      features: ['Bespoke Enterprise Systems', 'Microservices & Event-Driven Architecture', 'Legacy Modernization', 'Automated Workflows & CI/CD Pipelines']
+    },
+    {
+      id: 'srv-3',
+      title: 'Mobile App Development',
+      category: 'Mobile Solutions',
+      shortDesc: 'Native and cross-platform mobile apps for iOS and Android with intuitive fluid UX.',
+      fullDesc: 'Turn your product concept into an intuitive mobile app. We craft high-speed, engaging iOS and Android applications with offline caching and real-time cloud synchronicity.',
+      iconName: 'Smartphone',
+      features: ['Cross-Platform React Native & Flutter', 'Native iOS & Android Engineering', 'Offline-First Data Storage', 'Push Notifications & Deep Linking']
+    },
+    {
+      id: 'srv-4',
+      title: 'E-commerce Websites',
+      category: 'Commerce Solutions',
+      shortDesc: 'Robust digital storefronts with secure payment gateways and conversion optimization.',
+      fullDesc: 'Power your retail expansion with high-conversion eCommerce platforms featuring multi-currency support, payment gateways, live order tracking, and inventory sync.',
+      iconName: 'ShoppingCart',
+      features: ['Custom Checkout & Gateways (Stripe, PayPal)', 'Real-Time Inventory Synchronization', 'High-Speed Product Catalogs', 'Cart Recovery & Abandonment Triggers']
+    },
+    {
+      id: 'srv-5',
+      title: 'AI Solutions',
+      category: 'Artificial Intelligence',
+      shortDesc: 'Intelligent AI agents, automated natural language processors, and predictive models.',
+      fullDesc: 'Harness the frontier of generative AI and machine learning to automate customer conversations, extract operational intelligence, and deploy custom fine-tuned agents.',
+      iconName: 'Cpu',
+      features: ['Custom AI Agents & Copilots', 'Natural Language Understanding & Search', 'Document Processing & Intelligence', 'Predictive Analytics & Recommendation']
+    },
+    {
+      id: 'srv-6',
+      title: 'UI/UX Design',
+      category: 'Product Design',
+      shortDesc: 'Human-centric user experience design, interactive wireframes, and design systems.',
+      fullDesc: 'We shape captivating user experiences with pixel-perfect design systems, interactive prototypes, user journey mapping, and usability testing for friction-free products.',
+      iconName: 'Layers',
+      features: ['Comprehensive Design Systems', 'Figma Clickable Interactive Prototypes', 'User Journey & Usability Research', 'Accessibility (WCAG AA Compliance)']
+    },
+    {
+      id: 'srv-7',
+      title: 'Database Development',
+      category: 'Data Architecture',
+      shortDesc: 'High-availability relational and NoSQL database architecture, optimization, and migration.',
+      fullDesc: 'Architecting resilient databases tailored to your data workloads. We handle database schema normalization, indexing, query optimization, clustering, and zero-downtime migrations.',
+      iconName: 'Database',
+      features: ['Relational (PostgreSQL, MySQL) & NoSQL (MongoDB)', 'Schema Design & Index Optimization', 'Data Replication, Sharding & Backups', 'Zero-Downtime Data Migration']
+    },
+    {
+      id: 'srv-8',
+      title: 'Website Maintenance',
+      category: 'Support & Ops',
+      shortDesc: 'Proactive 24/7 security patching, performance monitoring, and continuous code updates.',
+      fullDesc: 'Keep your digital infrastructure flawless. Our proactive maintenance plans include vulnerability patches, uptime monitoring, automated backups, and guaranteed SLA responses.',
+      iconName: 'ShieldCheck',
+      features: ['24/7 Uptime & Performance Monitoring', 'Security Audits & Patch Management', 'Automated Daily Cloud Backups', 'Dedicated Emergency Response SLA']
+    }
+  ],
+  projects: [
+    {
+      id: 'proj-1',
+      title: 'E-commerce Website',
+      category: 'Websites',
+      shortDesc: 'Modern omnichannel retail storefront with instant faceted search and sub-second checkout.',
+      fullDesc: 'A sample demonstration e-commerce storefront engineered for ultra-fast product discovery, dynamic filtering, multi-currency pricing, and unified checkout orchestration.',
+      technologies: ['React', 'Next.js', 'Node.js', 'MongoDB', 'Stripe', 'Tailwind CSS'],
+      thumbnail: 'https://images.unsplash.com/photo-1557821552-17105176677c?auto=format&fit=crop&w=800&q=80',
+      isDemoAvailable: true,
+      demoUrl: '#demo-ecommerce',
+      highlights: ['Sub-second catalog search', 'Automated tax and shipping calculator', 'Mobile-first cart ergonomics']
+    },
+    {
+      id: 'proj-2',
+      title: 'School Management System',
+      category: 'Software',
+      shortDesc: 'Comprehensive academic institution platform managing student records, grading, and portals.',
+      fullDesc: 'Enterprise educational portal concept for primary and secondary academies. Features automated attendance logs, exam score generation, fee processing, and guardian communication.',
+      technologies: ['React', 'TypeScript', 'Express.js', 'PostgreSQL', 'Role-based ACL'],
+      thumbnail: 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&w=800&q=80',
+      isDemoAvailable: true,
+      demoUrl: '#demo-school',
+      highlights: ['Parent-student-teacher tripartite access', 'Automated timetable generator', 'Online tuition fee collection']
+    },
+    {
+      id: 'proj-3',
+      title: 'Inventory Management System',
+      category: 'Software',
+      shortDesc: 'Real-time multi-warehouse inventory tracker with automated replenishment alerts and barcode scanning.',
+      fullDesc: 'High-throughput inventory control system with supplier order tracking, real-time stock deductions via barcode scans, batch tracking, and intelligent reorder thresholds.',
+      technologies: ['Node.js', 'MongoDB', 'Redis', 'Tailwind CSS', 'WebSockets'],
+      thumbnail: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=800&q=80',
+      isDemoAvailable: true,
+      demoUrl: '#demo-inventory',
+      highlights: ['Predictive stockout warning triggers', 'Multi-location warehouse sync', 'Exportable audit reports']
+    },
+    {
+      id: 'proj-4',
+      title: 'AI Chat Assistant',
+      category: 'Applications',
+      shortDesc: 'Context-aware customer support AI agent integrated with live enterprise knowledge bases.',
+      fullDesc: 'Intelligent conversational AI agent tailored to technical enterprise inquiries. Uses semantic vector retrieval to accurately cite knowledge base documents and route escalations.',
+      technologies: ['Python', 'FastAPI', 'React', 'Gemini API', 'Vector Embeddings'],
+      thumbnail: 'https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&w=800&q=80',
+      isDemoAvailable: true,
+      demoUrl: '#demo-ai',
+      highlights: ['Instant semantic search & answer synthesis', 'Human-in-the-loop fallback', '99.2% intent recognition accuracy']
+    },
+    {
+      id: 'proj-5',
+      title: 'Restaurant Website & Ordering',
+      category: 'Websites',
+      shortDesc: 'Atmospheric culinary website with digital interactive menus, table reservation, and takeout orders.',
+      fullDesc: 'Sleek culinary branding and ordering portal featuring interactive table reservations, dietary filter menus, kitchen ticket generation, and direct pickup scheduling.',
+      technologies: ['React', 'Vite', 'Express', 'Tailwind CSS', 'Stripe'],
+      thumbnail: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80',
+      isDemoAvailable: true,
+      demoUrl: '#demo-restaurant',
+      highlights: ['Interactive floor table booking', 'Customizable dietary menus', 'Kitchen display system sync']
+    },
+    {
+      id: 'proj-6',
+      title: 'Mobile Application Suite',
+      category: 'Applications',
+      shortDesc: 'Cross-platform mobile application featuring biometric login, offline caching, and push sync.',
+      fullDesc: 'End-to-end mobile consumer application crafted with smooth 60fps micro-animations, biometric authentication, offline draft caching, and background synchronicity.',
+      technologies: ['React Native', 'TypeScript', 'Node.js', 'SQLite', 'Firebase Cloud Messaging'],
+      thumbnail: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=800&q=80',
+      isDemoAvailable: true,
+      demoUrl: '#demo-mobile',
+      highlights: ['Biometric face & fingerprint unlock', 'Offline synchronization queue', 'Fluid 60 FPS transitions']
+    }
+  ],
+  products: [
+    {
+      id: 'prod-1',
+      name: 'Brain ERP',
+      tagline: 'All-in-one Enterprise Resource Planning for agile scaling.',
+      description: 'Unified operational operating system connecting finance, human resources, procurement, manufacturing, and analytics under a modern dashboard.',
+      thumbnail: '/src/assets/images/showcase_brain_erp_1792395890205.jpg',
+      keyFeatures: [
+        'Real-time financial ledgers & cashflow analytics',
+        'Supply chain & automated vendor management',
+        'HR workforce onboarding, payroll & leave logs',
+        'Extensible REST & GraphQL API connectors'
+      ],
+      modules: ['Finance', 'HR & Payroll', 'Procurement', 'Inventory', 'CRM'],
+      status: 'Available'
+    },
+    {
+      id: 'prod-2',
+      name: 'School Management System',
+      tagline: 'Unified campus administration, grading & parent engagement.',
+      description: 'Modular academic administration engine managing student lifecycles, fee payment schedules, automated report cards, and digital class portals.',
+      thumbnail: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=800&q=80',
+      keyFeatures: [
+        'Automated attendance & RFID gate synchronization',
+        'Grading rubrics and downloadable PDF transcripts',
+        'Digital fee invoices with mobile banking integration',
+        'Interactive homework & exam schedule portal'
+      ],
+      modules: ['Student Portal', 'Faculty Desk', 'Finance & Billing', 'Exam Engine'],
+      status: 'Available'
+    },
+    {
+      id: 'prod-3',
+      name: 'Inventory Management System',
+      tagline: 'High-speed warehouse, stock & multi-channel logistics hub.',
+      description: 'Enterprise inventory platform with batch tracing, serial number tracking, barcode generation, multi-bin allocation, and forecasting.',
+      thumbnail: 'https://images.unsplash.com/photo-1553413077-190dd305871c?auto=format&fit=crop&w=800&q=80',
+      keyFeatures: [
+        'Multi-depot inventory visibility & stock transfers',
+        'Low stock threshold automated purchase orders',
+        'Wireless barcode & QR handheld scanner support',
+        'Comprehensive shrinkage and stock audit logs'
+      ],
+      modules: ['Warehouses', 'Purchasing', 'Order Fulfillment', 'Auditing'],
+      status: 'Available'
+    },
+    {
+      id: 'prod-4',
+      name: 'Hospital Management System',
+      tagline: 'Next-generation clinical EHR, outpatient & pharmacy ecosystem.',
+      description: 'HIPAA-compliant healthcare management platform connecting patient electronic records, doctor appointments, inpatient bed allocations, and pharmacy dispensaries.',
+      thumbnail: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=800&q=80',
+      keyFeatures: [
+        'Electronic Health Record (EHR) & patient history timeline',
+        'Doctor scheduling, OPD queue & bed management',
+        'Integrated pharmacy inventory & prescription dispensing',
+        'Laboratory test reporting & diagnostic image archive'
+      ],
+      modules: ['EHR Records', 'OPD/IPD Admissions', 'Pharmacy Hub', 'Laboratory'],
+      status: 'Available'
+    }
+  ],
+  team: [
+    {
+      id: 'team-1',
+      name: 'Tahir Mangi',
+      role: 'CEO & Founder',
+      bio: 'Visionary technologist and strategist with a passion for building transformative digital architectures. Tahir guides Brain The Next Devs in delivering elite software solutions that drive real enterprise growth across global markets.',
+      photoUrl: '/src/assets/images/team_ceo_tahir_1792395888931.jpg',
+      isFounder: true,
+      socials: {
+        linkedin: 'https://linkedin.com',
+        github: 'https://github.com',
+        twitter: 'https://x.com'
+      }
+    },
+    {
+      id: 'team-2',
+      name: 'Ayesha Khan',
+      role: 'Project Manager',
+      bio: 'Scrum-certified technical project manager specializing in agile delivery, team synchronization, and on-time milestones for complex multi-platform software deployments.',
+      photoUrl: '/src/assets/images/team_pm_ayesha_1792395889378.jpg',
+      isFounder: false,
+      socials: {
+        linkedin: 'https://linkedin.com',
+        github: 'https://github.com'
+      }
+    },
+    {
+      id: 'team-3',
+      name: 'Bilal Khan',
+      role: 'Lead Developer',
+      bio: 'Senior full-stack systems architect with deep expertise in distributed microservices, TypeScript, cloud deployments, and high-performance database optimization.',
+      photoUrl: '/src/assets/images/team_lead_bilal_1792395889791.jpg',
+      isFounder: false,
+      socials: {
+        linkedin: 'https://linkedin.com',
+        github: 'https://github.com',
+        twitter: 'https://x.com'
+      }
+    }
+  ],
+  pricing: [
+    {
+      id: 'price-1',
+      name: 'Basic',
+      tagline: 'Essential digital foundations for startups & small businesses.',
+      price: '$1,499',
+      period: 'starting price',
+      popular: false,
+      features: [
+        'Custom 5-page Responsive Website',
+        'Mobile & Tablet Optimization',
+        'Essential On-Page SEO Setup',
+        'Contact Form & Lead Capture',
+        'Google Analytics Integration',
+        'Standard SSL Security & CDN',
+        '30 Days Post-Launch Support'
+      ],
+      supportTerms: 'Standard Email & Ticket Support (24h response time)'
+    },
+    {
+      id: 'price-2',
+      name: 'Standard',
+      tagline: 'Ideal for scaling businesses requiring custom software & integrations.',
+      price: '$3,899',
+      period: 'starting price',
+      popular: true,
+      features: [
+        'Full Custom Web Application or E-commerce',
+        'Database Architecture & REST API',
+        'Content Management System (Admin Panel)',
+        'Payment Gateway Integration (Stripe/PayPal)',
+        'Role-Based User Authentication',
+        'Performance & Speed Optimization (<1.5s load)',
+        '90 Days Dedicated SLA Support'
+      ],
+      supportTerms: 'Priority Slack & Video Support (4h response time)'
+    },
+    {
+      id: 'price-3',
+      name: 'Premium',
+      tagline: 'Mission-critical enterprise software, mobile apps & custom AI models.',
+      price: '$8,499',
+      period: 'starting price',
+      popular: false,
+      features: [
+        'Enterprise Custom Software or Cross-Platform Mobile App',
+        'Custom AI Agent & Workflow Automation',
+        'Microservices or Distributed Architecture',
+        'Third-Party ERP/CRM Deep Integrations',
+        'Advanced Security Audits & Load Testing',
+        'DevOps CI/CD Deployment & Monitoring',
+        '1 Year Dedicated SLA & 24/7 Incident Escalation'
+      ],
+      supportTerms: '24/7 Dedicated Technical Support with 1-hour urgent SLA'
+    }
+  ],
+  blogs: [
+    {
+      id: 'blog-1',
+      title: 'Architecting Scalable Microservices with Node.js and MongoDB',
+      category: 'Software Development',
+      summary: 'Learn key patterns for decoupling enterprise monoliths into resilient, event-driven services that scale under high traffic.',
+      content: 'Scaling enterprise software requires moving beyond monolithic codebases. By adopting domain-driven design, isolated databases per service, and resilient message brokers, software teams can achieve 99.99% uptime while shipping features independently...',
+      publishDate: 'October 15, 2026',
+      readTime: '6 min read',
+      author: 'Bilal Khan',
+      imageUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80'
+    },
+    {
+      id: 'blog-2',
+      title: 'Integrating Custom AI Agents into Enterprise Workflows',
+      category: 'AI Solutions',
+      summary: 'A pragmatic guide to deploying generative AI copilots that respect corporate data boundaries and improve team productivity.',
+      content: 'Generative AI is shifting from novelty to critical business infrastructure. In this deep dive, we explore how retrieval-augmented generation (RAG) and structured tool calling allow enterprise organizations to leverage private knowledge safely...',
+      publishDate: 'October 08, 2026',
+      readTime: '8 min read',
+      author: 'Tahir Mangi',
+      imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80'
+    },
+    {
+      id: 'blog-3',
+      title: 'Modern Front-End Engineering: Why Performance is Your Best Marketing',
+      category: 'Website Development',
+      summary: 'How sub-second Core Web Vitals, server components, and responsive typography directly translate into higher conversion rates.',
+      content: 'Every 100 milliseconds of latency degrades user conversion. By adopting modern build systems, streamlined CSS-in-utility architectures, and image optimization pipelines, we guarantee websites that feel immediate on mobile and desktop alike...',
+      publishDate: 'September 28, 2026',
+      readTime: '5 min read',
+      author: 'Ayesha Khan',
+      imageUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80'
+    },
+    {
+      id: 'blog-4',
+      title: 'Cross-Platform Mobile Engineering: React Native vs Flutter in 2026',
+      category: 'Mobile Applications',
+      summary: 'An objective architectural comparison of performance, ecosystem maturity, and developer velocity for mobile apps.',
+      content: 'Choosing the right mobile foundation dictates your engineering roadmap for years. We analyze memory consumption, bridging overhead, native animation capabilities, and code reusability between web and mobile ecosystems...',
+      publishDate: 'September 14, 2026',
+      readTime: '7 min read',
+      author: 'Bilal Khan',
+      imageUrl: 'https://images.unsplash.com/photo-1526498460520-4c246339dccb?auto=format&fit=crop&w=800&q=80'
+    }
+  ],
+  inquiries: [
+    {
+      id: 'inq-1',
+      fullName: 'Marcus Vance',
+      email: 'm.vance@apexlogistics.com',
+      phone: '+1 (415) 890-2134',
+      service: 'Software Development',
+      budget: '$10,000 - $25,000',
+      projectDetails: 'We are seeking an inventory and logistics tracking software to manage 3 distribution centers with automated scanning.',
+      status: 'In Progress',
+      createdAt: '2026-10-18T14:30:00Z'
+    },
+    {
+      id: 'inq-2',
+      fullName: 'Elena Rostova',
+      email: 'elena@novapharma.co',
+      phone: '+1 (650) 422-9011',
+      service: 'AI Solutions',
+      budget: '$25,000+',
+      projectDetails: 'Interested in building a custom conversational agent for clinical trial documentation analysis.',
+      status: 'New',
+      createdAt: '2026-10-19T06:15:00Z'
+    }
+  ],
+  demoRequests: [
+    {
+      id: 'demo-1',
+      productName: 'Brain ERP',
+      fullName: 'David Sterling',
+      email: 'david@sterlingindustries.com',
+      company: 'Sterling Manufacturing',
+      phone: '+1 (312) 880-9941',
+      message: 'Looking for a demonstration of the finance and supply chain modules for a team of 45 people.',
+      status: 'Pending',
+      createdAt: '2026-10-19T02:20:00Z'
+    }
+  ],
+  settings: {
+    companyName: 'Brain The Next Devs',
+    tagline: 'Think Beyond. Build the Future.',
+    email: 'brainnextdeve@gmail.com',
+    phone: '+92 03256740073',
+    address: 'Innovation Tech Park, Suite 400, Global Silicon District',
+    stats: {
+      projectsCompleted: '250+',
+      happyClients: '180+',
+      yearsExperience: '8+',
+      technicalSupport: '24/7'
+    },
+    notice: 'Verified software development company sample achievements. Subject to client review.'
+  }
+};
+
+class DataStorage {
+  private memoryData = initialData;
+  private isMongoConnected = false;
+
+  constructor() {
+    this.initStorage();
+  }
+
+  private async initStorage() {
+    // 1. Check if MongoDB URI is available
+    const mongoUri = process.env.MONGODB_URI;
+    if (mongoUri) {
+      try {
+        await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 3000 });
+        this.isMongoConnected = true;
+        console.log('[Brain The Next Devs] Connected to MongoDB database successfully.');
+        await this.seedMongoIfEmpty();
+        return;
+      } catch (err) {
+        console.warn('[Brain The Next Devs] MongoDB URI provided but connection failed. Falling back to persistent local store:', err);
+      }
+    }
+
+    // 2. Persistent file store
+    try {
+      if (!fs.existsSync(DATA_DIR)) {
+        fs.mkdirSync(DATA_DIR, { recursive: true });
+      }
+      if (fs.existsSync(STORE_FILE)) {
+        const raw = fs.readFileSync(STORE_FILE, 'utf-8');
+        this.memoryData = JSON.parse(raw);
+      } else {
+        fs.writeFileSync(STORE_FILE, JSON.stringify(this.memoryData, null, 2), 'utf-8');
+      }
+    } catch (e) {
+      console.error('[Brain The Next Devs] File storage init warning:', e);
+    }
+  }
+
+  private saveToFile() {
+    try {
+      if (!fs.existsSync(DATA_DIR)) {
+        fs.mkdirSync(DATA_DIR, { recursive: true });
+      }
+      fs.writeFileSync(STORE_FILE, JSON.stringify(this.memoryData, null, 2), 'utf-8');
+    } catch (err) {
+      console.error('[Brain The Next Devs] Failed to save data store file:', err);
+    }
+  }
+
+  private async seedMongoIfEmpty() {
+    try {
+      const count = await ServiceModel.countDocuments();
+      if (count === 0) {
+        await ServiceModel.insertMany(initialData.services);
+        await ProjectModel.insertMany(initialData.projects);
+        await ProductModel.insertMany(initialData.products);
+        await TeamMemberModel.insertMany(initialData.team);
+        await PricingPlanModel.insertMany(initialData.pricing);
+        await BlogPostModel.insertMany(initialData.blogs);
+        await InquiryModel.insertMany(initialData.inquiries);
+        await DemoRequestModel.insertMany(initialData.demoRequests);
+        await SiteSettingModel.create(initialData.settings);
+        console.log('[Brain The Next Devs] Seeded initial collections to MongoDB successfully.');
+      }
+    } catch (err) {
+      console.error('Error seeding MongoDB collections:', err);
+    }
+  }
+
+  public isUsingMongo(): boolean {
+    return this.isMongoConnected;
+  }
+
+  // --- Services ---
+  public async getServices(): Promise<ServiceItem[]> {
+    if (this.isMongoConnected) {
+      const docs = await ServiceModel.find().lean();
+      return docs as unknown as ServiceItem[];
+    }
+    return this.memoryData.services;
+  }
+
+  public async updateService(id: string, updates: Partial<ServiceItem>): Promise<ServiceItem | null> {
+    if (this.isMongoConnected) {
+      const updated = await ServiceModel.findOneAndUpdate({ id }, { $set: updates }, { new: true }).lean();
+      return updated as unknown as ServiceItem;
+    }
+    const idx = this.memoryData.services.findIndex(s => s.id === id);
+    if (idx === -1) return null;
+    this.memoryData.services[idx] = { ...this.memoryData.services[idx], ...updates };
+    this.saveToFile();
+    return this.memoryData.services[idx];
+  }
+
+  // --- Projects ---
+  public async getProjects(): Promise<ProjectItem[]> {
+    if (this.isMongoConnected) {
+      const docs = await ProjectModel.find().lean();
+      return docs as unknown as ProjectItem[];
+    }
+    return this.memoryData.projects;
+  }
+
+  public async addProject(project: Omit<ProjectItem, 'id'>): Promise<ProjectItem> {
+    const id = `proj-${Date.now()}`;
+    const newProject: ProjectItem = { ...project, id };
+    if (this.isMongoConnected) {
+      await ProjectModel.create(newProject);
+    } else {
+      this.memoryData.projects.push(newProject);
+      this.saveToFile();
+    }
+    return newProject;
+  }
+
+  public async updateProject(id: string, updates: Partial<ProjectItem>): Promise<ProjectItem | null> {
+    if (this.isMongoConnected) {
+      const updated = await ProjectModel.findOneAndUpdate({ id }, { $set: updates }, { new: true }).lean();
+      return updated as unknown as ProjectItem;
+    }
+    const idx = this.memoryData.projects.findIndex(p => p.id === id);
+    if (idx === -1) return null;
+    this.memoryData.projects[idx] = { ...this.memoryData.projects[idx], ...updates };
+    this.saveToFile();
+    return this.memoryData.projects[idx];
+  }
+
+  public async deleteProject(id: string): Promise<boolean> {
+    if (this.isMongoConnected) {
+      const res = await ProjectModel.deleteOne({ id });
+      return res.deletedCount > 0;
+    }
+    const initialLen = this.memoryData.projects.length;
+    this.memoryData.projects = this.memoryData.projects.filter(p => p.id !== id);
+    this.saveToFile();
+    return this.memoryData.projects.length < initialLen;
+  }
+
+  // --- Products ---
+  public async getProducts(): Promise<ProductItem[]> {
+    if (this.isMongoConnected) {
+      const docs = await ProductModel.find().lean();
+      return docs as unknown as ProductItem[];
+    }
+    return this.memoryData.products;
+  }
+
+  public async updateProduct(id: string, updates: Partial<ProductItem>): Promise<ProductItem | null> {
+    if (this.isMongoConnected) {
+      const updated = await ProductModel.findOneAndUpdate({ id }, { $set: updates }, { new: true }).lean();
+      return updated as unknown as ProductItem;
+    }
+    const idx = this.memoryData.products.findIndex(p => p.id === id);
+    if (idx === -1) return null;
+    this.memoryData.products[idx] = { ...this.memoryData.products[idx], ...updates };
+    this.saveToFile();
+    return this.memoryData.products[idx];
+  }
+
+  // --- Team (Exactly 3 Profiles) ---
+  public async getTeam(): Promise<TeamMemberItem[]> {
+    if (this.isMongoConnected) {
+      const docs = await TeamMemberModel.find().lean();
+      return docs as unknown as TeamMemberItem[];
+    }
+    return this.memoryData.team;
+  }
+
+  public async updateTeamMember(id: string, updates: Partial<TeamMemberItem>): Promise<TeamMemberItem | null> {
+    if (this.isMongoConnected) {
+      const updated = await TeamMemberModel.findOneAndUpdate({ id }, { $set: updates }, { new: true }).lean();
+      return updated as unknown as TeamMemberItem;
+    }
+    const idx = this.memoryData.team.findIndex(t => t.id === id);
+    if (idx === -1) return null;
+    this.memoryData.team[idx] = { ...this.memoryData.team[idx], ...updates };
+    this.saveToFile();
+    return this.memoryData.team[idx];
+  }
+
+  // --- Pricing Plans ---
+  public async getPricing(): Promise<PricingPlanItem[]> {
+    if (this.isMongoConnected) {
+      const docs = await PricingPlanModel.find().lean();
+      return docs as unknown as PricingPlanItem[];
+    }
+    return this.memoryData.pricing;
+  }
+
+  public async updatePricingPlan(id: string, updates: Partial<PricingPlanItem>): Promise<PricingPlanItem | null> {
+    if (this.isMongoConnected) {
+      const updated = await PricingPlanModel.findOneAndUpdate({ id }, { $set: updates }, { new: true }).lean();
+      return updated as unknown as PricingPlanItem;
+    }
+    const idx = this.memoryData.pricing.findIndex(p => p.id === id);
+    if (idx === -1) return null;
+    this.memoryData.pricing[idx] = { ...this.memoryData.pricing[idx], ...updates };
+    this.saveToFile();
+    return this.memoryData.pricing[idx];
+  }
+
+  // --- Blogs ---
+  public async getBlogs(): Promise<BlogPostItem[]> {
+    if (this.isMongoConnected) {
+      const docs = await BlogPostModel.find().lean();
+      return docs as unknown as BlogPostItem[];
+    }
+    return this.memoryData.blogs;
+  }
+
+  public async addBlog(blog: Omit<BlogPostItem, 'id'>): Promise<BlogPostItem> {
+    const id = `blog-${Date.now()}`;
+    const newBlog: BlogPostItem = { ...blog, id };
+    if (this.isMongoConnected) {
+      await BlogPostModel.create(newBlog);
+    } else {
+      this.memoryData.blogs.unshift(newBlog);
+      this.saveToFile();
+    }
+    return newBlog;
+  }
+
+  public async deleteBlog(id: string): Promise<boolean> {
+    if (this.isMongoConnected) {
+      const res = await BlogPostModel.deleteOne({ id });
+      return res.deletedCount > 0;
+    }
+    const initialLen = this.memoryData.blogs.length;
+    this.memoryData.blogs = this.memoryData.blogs.filter(b => b.id !== id);
+    this.saveToFile();
+    return this.memoryData.blogs.length < initialLen;
+  }
+
+  // --- Inquiries ---
+  public async getInquiries(): Promise<InquiryItem[]> {
+    if (this.isMongoConnected) {
+      const docs = await InquiryModel.find().sort({ createdAt: -1 }).lean();
+      return docs as unknown as InquiryItem[];
+    }
+    return this.memoryData.inquiries;
+  }
+
+  public async addInquiry(inquiry: Omit<InquiryItem, 'id' | 'status' | 'createdAt'>): Promise<InquiryItem> {
+    const id = `inq-${Date.now()}`;
+    const newInquiry: InquiryItem = {
+      ...inquiry,
+      id,
+      status: 'New',
+      createdAt: new Date().toISOString()
+    };
+    if (this.isMongoConnected) {
+      await InquiryModel.create(newInquiry);
+    } else {
+      this.memoryData.inquiries.unshift(newInquiry);
+      this.saveToFile();
+    }
+    return newInquiry;
+  }
+
+  public async updateInquiryStatus(id: string, status: InquiryItem['status']): Promise<InquiryItem | null> {
+    if (this.isMongoConnected) {
+      const updated = await InquiryModel.findOneAndUpdate({ id }, { $set: { status } }, { new: true }).lean();
+      return updated as unknown as InquiryItem;
+    }
+    const idx = this.memoryData.inquiries.findIndex(i => i.id === id);
+    if (idx === -1) return null;
+    this.memoryData.inquiries[idx].status = status;
+    this.saveToFile();
+    return this.memoryData.inquiries[idx];
+  }
+
+  public async deleteInquiry(id: string): Promise<boolean> {
+    if (this.isMongoConnected) {
+      const res = await InquiryModel.deleteOne({ id });
+      return res.deletedCount > 0;
+    }
+    const initialLen = this.memoryData.inquiries.length;
+    this.memoryData.inquiries = this.memoryData.inquiries.filter(i => i.id !== id);
+    this.saveToFile();
+    return this.memoryData.inquiries.length < initialLen;
+  }
+
+  // --- Demo Requests ---
+  public async getDemoRequests(): Promise<DemoRequestItem[]> {
+    if (this.isMongoConnected) {
+      const docs = await DemoRequestModel.find().sort({ createdAt: -1 }).lean();
+      return docs as unknown as DemoRequestItem[];
+    }
+    return this.memoryData.demoRequests;
+  }
+
+  public async addDemoRequest(demo: Omit<DemoRequestItem, 'id' | 'status' | 'createdAt'>): Promise<DemoRequestItem> {
+    const id = `demo-${Date.now()}`;
+    const newDemo: DemoRequestItem = {
+      ...demo,
+      id,
+      status: 'Pending',
+      createdAt: new Date().toISOString()
+    };
+    if (this.isMongoConnected) {
+      await DemoRequestModel.create(newDemo);
+    } else {
+      this.memoryData.demoRequests.unshift(newDemo);
+      this.saveToFile();
+    }
+    return newDemo;
+  }
+
+  // --- Settings & Stats ---
+  public async getSettings(): Promise<SiteSettings> {
+    if (this.isMongoConnected) {
+      const doc = await SiteSettingModel.findOne().lean();
+      if (doc) return doc as unknown as SiteSettings;
+    }
+    return this.memoryData.settings;
+  }
+
+  public async updateSettings(updates: Partial<SiteSettings>): Promise<SiteSettings> {
+    if (this.isMongoConnected) {
+      const updated = await SiteSettingModel.findOneAndUpdate({}, { $set: updates }, { new: true, upsert: true }).lean();
+      return updated as unknown as SiteSettings;
+    }
+    this.memoryData.settings = { ...this.memoryData.settings, ...updates };
+    this.saveToFile();
+    return this.memoryData.settings;
+  }
+}
+
+export const storage = new DataStorage();

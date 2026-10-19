@@ -1,0 +1,8 @@
+{
+  "name": "Brain The Next Devs",
+  "description": "Brain The Next Devs — Think Beyond. Build the Future. Premium software development, enterprise software, mobile apps, and AI-powered digital solutions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
