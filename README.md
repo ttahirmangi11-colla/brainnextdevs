@@ -187,19 +187,34 @@ git push -u origin main
 
 ## Deployment Options
 
-### Option A: Render / Railway (Recommended Full-Stack)
+### Option A: Netlify (Recommended)
+This repository includes a preconfigured `netlify.toml`, Netlify serverless functions (`netlify/functions/api.ts`), and SPA redirects (`public/_redirects`):
+1. Go to [Netlify](https://app.netlify.com/) and click **Add new site > Import an existing project**.
+2. Connect your GitHub account and select this repository.
+3. Netlify will auto-detect settings from `netlify.toml`:
+   - **Build command**: `npm run build`
+   - **Publish directory**: `dist`
+   - **Functions directory**: `netlify/functions`
+4. In **Site Configuration > Environment Variables**, add:
+   - `SUPABASE_URL`: `https://huzrvybpywrzelmhlvlh.supabase.co`
+   - `SUPABASE_ANON_KEY`: `sb_publishable_GKzkYbXl8wAcBnxYtCJDTA_iXmGUqNt`
+   - `ADMIN_EMAIL`: `admin@brainthenextdevs.com`
+   - `ADMIN_PASSWORD`: `admin123`
+5. Click **Deploy Site**!
+
+### Option B: Render / Railway (Full-Stack Node Server)
 Deploy both the Express backend and React frontend with persistent endpoints:
 1. Connect your GitHub repository to [Render.com](https://render.com) or [Railway.app](https://railway.app).
 2. Set **Build Command**: `npm install && npm run build`
 3. Set **Start Command**: `npm start`
 4. Add your environment variables (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `ADMIN_PASSWORD`).
 
-### Option B: Vercel
+### Option C: Vercel
 1. Import your GitHub repository into [Vercel](https://vercel.com).
 2. Framework Preset: **Vite**.
 3. Deploy!
 
-### Option C: GitHub Pages (Frontend Hosting)
+### Option D: GitHub Pages (Frontend Hosting)
 This repository includes a ready-to-use GitHub Actions workflow (`.github/workflows/deploy-pages.yml`):
 1. In your GitHub repository, go to **Settings** > **Pages**.
 2. Under **Build and deployment > Source**, select **GitHub Actions**.

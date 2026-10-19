@@ -98,6 +98,38 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
         onInquirySubmitted();
       }
     } catch (err: any) {
+      // Direct Supabase fallback if backend server route is unavailable (e.g. static hosting)
+      try {
+        const { createClient } = await import('@supabase/supabase-js');
+        const client = createClient(
+          'https://huzrvybpywrzelmhlvlh.supabase.co',
+          'sb_publishable_GKzkYbXl8wAcBnxYtCJDTA_iXmGUqNt'
+        );
+        const { error: supaErr } = await client.from('bookings').insert([{
+          id: `inq-${Date.now()}`,
+          full_name: fullName.trim(),
+          email: email.trim().toLowerCase(),
+          phone: phone.trim(),
+          service,
+          budget: budget || 'Flexible',
+          project_details: projectDetails.trim(),
+          status: 'New',
+          created_at: new Date().toISOString()
+        }]);
+
+        if (!supaErr) {
+          setSuccessMessage('Inquiry successfully recorded in Supabase. A senior engineer will respond within 24 hours.');
+          setFullName('');
+          setEmail('');
+          setPhone('');
+          setProjectDetails('');
+          if (onInquirySubmitted) onInquirySubmitted();
+          return;
+        }
+      } catch (fallbackErr) {
+        console.error('Supabase client fallback failed:', fallbackErr);
+      }
+
       setApiError(err.message || 'Network error occurred while connecting to backend.');
     } finally {
       setLoading(false);
